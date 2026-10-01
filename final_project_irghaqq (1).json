@@ -1,0 +1,870 @@
+{
+  "name": "final_project_irghaqq",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Formulir Pengaduan Warga Perumahan Permata Mediterania",
+        "formDescription": "Silahkan sampaikan keluhan anda di bawah ini.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nama Warga",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Alamat Rumah",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Keluhan",
+              "placeholder": "isi keluhan anda...",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "No. Handphone",
+              "fieldType": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d2421e5e-b325-45d9-95a9-dcacf3c15536",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        96,
+        400
+      ],
+      "webhookId": "8863b371-a163-4fe6-a64f-4edce267070f"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Anda adalah petugas pengaduan masyarakat di kantor kelurahan yang berpengalaman mengelola ribuan laporan warga.\n\nContext: Warga mengirimkan keluhan lewat formulir online dalam bahasa sehari-hari, bervariasi gaya penulisannya. Keluhan ini akan dirutekan otomatis ke petugas terkait berdasarkan kategori dan tingkat urgensinya, sehingga hasil klasifikasi harus akurat dan konsisten.\n\nTask: Baca keluhan warga berikut, lalu tentukan kategori dan tingkat urgensinya.\nKeluhan: \"{{ $json.Keluhan }}\"\n\nFormat: Jawab HANYA dalam format JSON persis seperti ini, tanpa teks tambahan apa pun sebelum atau sesudahnya:\n\n{\n  \"alasan\": \"penjelasan singkat kenapa kategori dan urgensi ini dipilih\",\n  \"kategori\": \"Infrastruktur, Kebersihan, atau Keamanan\",\n  \"urgensi\": \"Rendah, Sedang, atau Tinggi\"\n}\n\nConstraints:\n\nKategori HARUS salah satu dari: Infrastruktur, Kebersihan, Keamanan\nUrgensi HARUS salah satu dari: Rendah, Sedang, Tinggi\nIsi field \"alasan\" DULU sebelum menentukan kategori dan urgensi, supaya keputusannya dipikirkan dengan matang\nJangan tambahkan penjelasan, markdown, atau teks apa pun di luar struktur JSON tersebut"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "d688256b-5de5-4294-a800-00b20d9ce048",
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        400
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vG69W2S7PefELkaT",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b3ee29d5-b9c4-49e1-ba43-818235a0c715",
+              "name": "kategori",
+              "value": "={{ JSON.parse($json.content.parts[0].text).kategori }}",
+              "type": "string"
+            },
+            {
+              "id": "c266dc31-a5f5-48ae-945e-a3304ca62a53",
+              "name": "level_urgensi",
+              "value": "={{ JSON.parse($json.content.parts[0].text).urgensi }}",
+              "type": "string"
+            },
+            {
+              "id": "c4e7e63a-13c0-44bd-a833-7a1f9caca8c4",
+              "name": "alasan",
+              "value": "={{ JSON.parse($json.content.parts[0].text).alasan }}",
+              "type": "string"
+            },
+            {
+              "id": "17b9f050-2b5d-449f-8995-2b67f99faa4d",
+              "name": "tanggal_aduan",
+              "value": "={{ DateTime.fromISO($('On form submission').item.json.submittedAt).setZone('Asia/Jakarta').toFormat('dd/MM/yyyy') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0f9873d7-1e77-426d-819e-d938034bbb17",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        688,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.kategori }}",
+                    "rightValue": "Infrastruktur",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c3152ece-6571-4569-876f-72ccb9ac3477"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Infrastruktur"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "978ad421-2f43-4610-959c-75485211f61c",
+                    "leftValue": "={{ $json.kategori }}",
+                    "rightValue": "Keamanan",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Keamanan"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ce238e27-ce5f-47d2-a47f-a6134e41784a",
+                    "leftValue": "={{ $json.kategori }}",
+                    "rightValue": "Kebersihan",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Kebersihan"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "69230aaa-6199-4f06-a6be-1f94c1dbf79f",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0",
+          "mode": "list",
+          "cachedResultName": "monitoring_laporan_warga",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Infrastruktur",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kategori": "={{ $json.kategori }}",
+            "level_urgensi": "={{ $json.level_urgensi }}",
+            "alasan": "={{ $json.alasan }}",
+            "tanggal_aduan": "={{ $json.tanggal_aduan }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "kategori",
+              "displayName": "kategori",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "level_urgensi",
+              "displayName": "level_urgensi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alasan",
+              "displayName": "alasan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tanggal_aduan",
+              "displayName": "tanggal_aduan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c54151a6-9343-4917-b982-e5188e3fa33b",
+      "name": "keluhan_infrastruktur",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1136,
+        224
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "He5QL11c5CbR7vzK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0",
+          "mode": "list",
+          "cachedResultName": "monitoring_laporan_warga",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1108802920,
+          "mode": "list",
+          "cachedResultName": "Keamanan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit#gid=1108802920"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kategori": "={{ $('Edit Fields').item.json.kategori }}",
+            "level_urgensi": "={{ $('Edit Fields').item.json.level_urgensi }}",
+            "alasan": "={{ $('Edit Fields').item.json.alasan }}",
+            "tanggal_aduan": "={{ $('Edit Fields').item.json.tanggal_aduan }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "kategori",
+              "displayName": "kategori",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "level_urgensi",
+              "displayName": "level_urgensi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alasan",
+              "displayName": "alasan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tanggal_aduan",
+              "displayName": "tanggal_aduan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4cee1f31-5ca8-4112-b844-7795496ed49b",
+      "name": "keluhan_keamanan",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1136,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "He5QL11c5CbR7vzK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0",
+          "mode": "list",
+          "cachedResultName": "monitoring_laporan_warga",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1128806820,
+          "mode": "list",
+          "cachedResultName": "Kebersihan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IRJvZfqAkGv_bsEuA8YCi4XuWMkq0Fv-JYMIZD1GCl0/edit#gid=1128806820"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "kategori": "={{ $json.kategori }}",
+            "level_urgensi": "={{ $json.level_urgensi }}",
+            "alasan": "={{ $json.alasan }}",
+            "tanggal_aduan": "={{ $json.tanggal_aduan }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "kategori",
+              "displayName": "kategori",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "level_urgensi",
+              "displayName": "level_urgensi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alasan",
+              "displayName": "alasan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tanggal_aduan",
+              "displayName": "tanggal_aduan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ee81ba57-ee81-4852-b31f-bebcf501dc49",
+      "name": "keluhan_kebersihan",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1136,
+        592
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "He5QL11c5CbR7vzK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Background Permasalahan: Banyaknya keluhan warga yang disampaikan setiap harinya, namun masih belum dapat menyelesaikan seluruhnya dikarenakan keterbatasan personel dan juga masalah prioritas.\n\nKenapa layak di otomatisasi: Agar seluruh keluhan dapat segera diatasi, karena selama ini keluhan dapat terjadi secara berulang di WAG warga akibat dari penanganan yang kurang tepat.",
+        "height": 320,
+        "width": 464,
+        "color": "#ECE874"
+      },
+      "id": "d55850a1-2dac-42ac-ac5f-3e4b1966c113",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75aea705-af74-4113-95f3-4bbe18f0598b",
+              "leftValue": "={{ $json.level_urgensi }}",
+              "rightValue": "Tinggi",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        224
+      ],
+      "id": "e3340695-20cd-4e0f-832c-0e9393b6dc93",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "849baf3a-53de-442b-9568-4ccf067a5ac5",
+              "leftValue": "={{ $json.level_urgensi }}",
+              "rightValue": "Tinggi",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        400
+      ],
+      "id": "e2966713-45ab-4e97-a4a4-0691eb4ae04c",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e68a5548-df20-47a1-8de2-faadeeaf8297",
+              "leftValue": "={{ $json.level_urgensi }}",
+              "rightValue": "Tinggi",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1360,
+        592
+      ],
+      "id": "ea212e4a-8c71-430c-8af7-b53238b0062e",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "sendTo": "irghaqq@gmail.com",
+        "subject": "=Laporan warga ({{ $('keluhan_infrastruktur').item.json.kategori }})",
+        "emailType": "text",
+        "message": "=Laporan keluhan warga pada {{ $json.tanggal_aduan }},\nmengenai  {{ $json.kategori }} dengan alasan {{ $json.alasan }}\n\nHal ini memiliki urgensi tingkat {{ $json.level_urgensi }}, untuk itu mohon agar dapat segera di tindak lanjuti oleh jajaran Ketua RT beserta pengurus lainnya.",
+        "options": {}
+      },
+      "id": "644417cc-4b7e-43f3-b9f3-ad07d940bb32",
+      "name": "urgensi tinggi",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        208
+      ],
+      "webhookId": "b79490cd-e049-4dee-958d-026b7736bb90",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UK6BwBs6TVA7O4fg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "irghaqq@gmail.com",
+        "subject": "=Laporan Warga ({{ $('keluhan_keamanan').item.json.kategori }})",
+        "emailType": "text",
+        "message": "=Laporan keluhan warga pada {{ $json.tanggal_aduan }},\nmengenai  {{ $json.kategori }} dengan alasan {{ $json.alasan }}\n\nHal ini memiliki urgensi tingkat {{ $json.level_urgensi }}, untuk itu mohon agar dapat segera di tindak lanjuti oleh jajaran Ketua RT beserta pengurus lainnya.",
+        "options": {}
+      },
+      "id": "7e1a1d05-d4de-4405-88a8-bb2b478ecb99",
+      "name": "urgensi tinggi1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        384
+      ],
+      "webhookId": "0cd2f571-bbde-4c29-8fe0-e2554dd87748",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UK6BwBs6TVA7O4fg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "irghaqq@gmail.com",
+        "subject": "=Laporan Warga ({{ $('keluhan_kebersihan').item.json.kategori }})",
+        "emailType": "text",
+        "message": "=Laporan keluhan warga pada {{ $json.tanggal_aduan }},\nmengenai  {{ $json.kategori }} dengan alasan {{ $json.alasan }}\n\nHal ini memiliki urgensi tingkat {{ $json.level_urgensi }}, untuk itu mohon agar dapat segera di tindak lanjuti oleh jajaran Ketua RT beserta pengurus lainnya.",
+        "options": {}
+      },
+      "id": "8895749d-f0bf-4fef-b0fc-889c95d475ea",
+      "name": "urgensi tinggi2",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        576
+      ],
+      "webhookId": "61733cc7-9684-4cce-ac6a-288d94689c9d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UK6BwBs6TVA7O4fg",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "961821617",
+        "text": "=Mohon di koordinasikan dengan pihak-pihak terkait laporan pada tanggal {{ $json.tanggal_aduan }} untuk, {{ $json.alasan }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ca0efbdb-3525-4ce3-8431-f0aba5bb725f",
+      "name": "notifikasi telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        752
+      ],
+      "webhookId": "16ca5497-7e73-430d-b11a-360a9fac7416",
+      "credentials": {
+        "telegramApi": {
+          "id": "KuMEiuFxPWEOdFwV",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.level_urgensi }}",
+              "rightValue": "sedang",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "a6cfb031-25c5-4840-acab-97fabbbd9144"
+            },
+            {
+              "leftValue": "={{ $json.level_urgensi }}",
+              "rightValue": "rendah",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "46f5f102-ca13-4018-ad35-cba12489da84"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "25ce2a3f-7a84-4029-865e-2726f8ab591d",
+      "name": "urgensi_sedang_atau_rendah",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        912,
+        752
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "urgensi_sedang_atau_rendah",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "keluhan_infrastruktur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "keluhan_keamanan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "keluhan_kebersihan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keluhan_infrastruktur": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keluhan_keamanan": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "keluhan_kebersihan": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "urgensi tinggi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "urgensi tinggi1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "urgensi tinggi2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "urgensi_sedang_atau_rendah": {
+      "main": [
+        [
+          {
+            "node": "notifikasi telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6888de8c-d4ac-4c26-9293-6c2a35d10554",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9007b1df669f43ea191b3e1e78eb536902cd885465fc9e812ee34c32c3c060b6"
+  },
+  "nodeGroups": [],
+  "id": "HGarf6CLnlQyYHeb",
+  "tags": []
+}
